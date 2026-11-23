@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Student QR Cards</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  *{box-sizing:border-box}
+  body{font-family:system-ui,sans-serif;margin:0;padding:14px;background:#f1f5f9}
+  .bar{max-width:460px;margin:0 auto 14px}
+  input,button{width:100%;padding:12px;font-size:1rem;border-radius:10px;border:1px solid #cbd5e1;margin-bottom:8px}
+  button{background:#0f766e;color:#fff;border:0;font-weight:600}
+  #err{color:#b91c1c}
+  #grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+  .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:12px;text-align:center;break-inside:avoid}
+  .card .q{display:flex;justify-content:center;margin-bottom:8px}
+  .card b{display:block;font-size:.95rem}
+  .card span{color:#64748b;font-size:.8rem}
+  @media print{.bar{display:none}body{background:#fff;padding:0}}
+</style>
+</head>
+<body>
+<div class="bar">
+  <input id="pin" type="password" placeholder="PIN">
+  <button onclick="load()">Generate QR cards</button>
+  <button onclick="window.print()" style="background:#334155">Print / Save as PDF</button>
+  <div id="err"></div>
+</div>
+<div id="grid"></div>
+<script>
+  // >>> PUT YOUR APPS SCRIPT WEB APP URL HERE (ends with /exec) <<<
+  var API_URL = 'https://script.google.com/macros/s/AKfycbwfClZjmTKetOK0FIkM2y5OOGhWHxH5H4menzw7Z2TTEX0alLXJ3ChAWRAqGlkKvL-RXg/exec';
+
+  function load(){
+    var pin = document.getElementById('pin').value;
+    document.getElementById('err').textContent = 'Loading...';
+    fetch(API_URL, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({action:'students', pin:pin})})
+    .then(function(r){return r.json()}).then(function(r){
+      if(!r.ok){ document.getElementById('err').textContent = r.msg; return; }
+      document.getElementById('err').textContent = r.students.length ? '' : 'Add students to the "Students" tab first.';
+      var g = document.getElementById('grid'); g.innerHTML = '';
+      r.students.forEach(function(s){
+        var d = document.createElement('div'); d.className = 'card';
+        var q = document.createElement('div'); q.className = 'q';
+        var b = document.createElement('b'); b.textContent = s.name;
+        var sp = document.createElement('span'); sp.textContent = s.id;
+        d.appendChild(q); d.appendChild(b); d.appendChild(sp); g.appendChild(d);
+        new QRCode(q, {text: s.qr, width:128, height:128});
+      });
+    }).catch(function(){ document.getElementById('err').textContent = 'Cannot reach server. Check API_URL.'; });
+  }
+</script>
+</body>
+</html>
